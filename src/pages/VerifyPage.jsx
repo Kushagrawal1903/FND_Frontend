@@ -63,7 +63,14 @@ const VerifyPage = () => {
         response = await newsAPI.analyze(inputText);
       }
 
-      setResult(response.data.data || response.data);
+      const data = response.data.data || response.data;
+      setResult(data);
+      
+      // Save verification data to sessionStorage so the Detailed Report page can fetch it
+      const verificationData = data.verification || data;
+      if (verificationData) {
+        sessionStorage.setItem('recent_scan', JSON.stringify(verificationData));
+      }
     } catch (err) {
       console.error(err);
       setError(err.message || err.response?.data?.message || 'An error occurred during verification.');

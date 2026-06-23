@@ -25,7 +25,9 @@ const SavedArticlesPage = () => {
     setError('');
     try {
       const res = await articlesAPI.getAll();
-      setArticles(res.data.data || res.data || []);
+      // Backend returns { status, data: { articles: [...] } }
+      const data = res.data?.data?.articles ?? res.data?.data ?? res.data ?? [];
+      setArticles(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || 'Failed to load saved articles.');
@@ -87,14 +89,14 @@ const SavedArticlesPage = () => {
     }
   };
 
-  // Search & Filter computation
-  const filteredArticles = articles.filter((art) => {
-    const matchesSearch = 
-      art.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (art.notes && art.notes.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesVerdict = 
-      verdictFilter === 'all' || 
+  // Search & Filter computation — guard ensures articles is always an array
+  const filteredArticles = (Array.isArray(articles) ? articles : []).filter((art) => {
+    const matchesSearch =
+      (art.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ((art.notes || '').toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesVerdict =
+      verdictFilter === 'all' ||
       String(art.verdict).toLowerCase() === verdictFilter.toLowerCase();
 
     return matchesSearch && matchesVerdict;

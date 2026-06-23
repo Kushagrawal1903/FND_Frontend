@@ -46,8 +46,9 @@ export const authAPI = {
 
 export const newsAPI = {
   check: (claim) => API.post('/api/news/check', { claim }),
-  analyze: (claim) => API.post('/api/news/analyze', { claim }),
+  analyze: (newsText) => API.post('/api/v1/news-analysis/analyze', { newsText }),
   urlCheck: (url) => API.post('/api/news/url-check', { url }),
+  getFactCheck: (id) => API.get(`/api/news/check/${id}`),
 };
 
 export const articlesAPI = {

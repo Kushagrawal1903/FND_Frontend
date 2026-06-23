@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import { articlesAPI } from '../services/api';
+import { articlesAPI, newsAPI } from '../services/api';
 
 const ReportPage = () => {
   const { id } = useParams();
@@ -19,49 +19,66 @@ const ReportPage = () => {
     setLoading(true);
     setError('');
     try {
-      // First, check if this is in the user's saved articles
-      const res = await articlesAPI.getAll();
-      const articles = res.data.data || res.data || [];
-      const matched = articles.find((art) => art._id === id);
-      
-      if (matched) {
-        // Adapt saved article format to verification report format
-        setReport({
-          claim: matched.title,
-          verdict: matched.verdict,
-          confidence: matched.verdict === 'true' ? 95 : matched.verdict === 'false' ? 85 : matched.verdict === 'mixture' ? 60 : 25,
-          explanation: matched.notes || `This article has been verified by the TruthLens engine as ${matched.verdict.toUpperCase()}. Historical records and independent fact-checking databases validate this assessment.`,
-          sources: [
-            { publisher: 'TruthLens Registry', url: matched.url, verdict: matched.verdict }
-          ],
-          createdAt: matched.createdAt,
-        });
-      } else {
-        // Fallback: Check if there's a recently run scan in sessionStorage
-        const recentScan = sessionStorage.getItem('recent_scan');
-        if (recentScan) {
-          const parsed = JSON.parse(recentScan);
-          if (parsed._id === id || parsed.claim === id) {
-            setReport(parsed);
-            setLoading(false);
-            return;
-          }
+      // 1. Try to fetch from the database via the API endpoint
+      try {
+        const dbRes = await newsAPI.getFactCheck(id);
+        if (dbRes.data && dbRes.data.data) {
+          setReport(dbRes.data.data);
+          setLoading(false);
+          return;
         }
-
-        // Otherwise generate a realistic mocked report for verification UI purposes
-        setReport({
-          claim: decodeURIComponent(id).replace(/_/g, ' ') || 'Synthetic fabric legislation ban timeline',
-          verdict: 'false',
-          confidence: 82,
-          explanation: 'Independent fact-checkers from PolitiFact and Snopes have investigated the claims surrounding this headline. The proposed regulatory draft does not mandate a ban on synthetic garments; rather, it sets guidelines for microplastic filtration in industrial textile manufacturing plants.',
-          sources: [
-            { publisher: 'PolitiFact', url: 'https://www.politifact.com', verdict: 'False' },
-            { publisher: 'Snopes Fact Checker', url: 'https://www.snopes.com', verdict: 'Misleading' },
-            { publisher: 'FactCheck.org', url: 'https://www.factcheck.org', verdict: 'False' }
-          ],
-          createdAt: new Date().toISOString(),
-        });
+      } catch (dbErr) {
+        console.warn('Could not fetch from backend directly, trying client storage...', dbErr);
       }
+
+      // 2. First, check if this is in the user's saved articles
+      const res = await articlesAPI.getAll();
+      const articles = res.data?.data?.articles ?? res.data?.data ?? res.data ?? [];
+      
+      if (Array.isArray(articles)) {
+        const matched = articles.find((art) => art._id === id);
+        
+        if (matched) {
+          // Adapt saved article format to verification report format
+          setReport({
+            claim: matched.title,
+            verdict: matched.verdict,
+            confidence: matched.verdict === 'true' ? 95 : matched.verdict === 'false' ? 85 : matched.verdict === 'mixture' ? 60 : 25,
+            explanation: matched.notes || `This article has been verified by the TruthLens engine as ${matched.verdict.toUpperCase()}. Historical records and independent fact-checking databases validate this assessment.`,
+            sources: [
+              { publisher: 'TruthLens Registry', url: matched.url, verdict: matched.verdict }
+            ],
+            createdAt: matched.createdAt,
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 3. Fallback: Check if there's a recently run scan in sessionStorage
+      const recentScan = sessionStorage.getItem('recent_scan');
+      if (recentScan) {
+        const parsed = JSON.parse(recentScan);
+        if (parsed._id === id || parsed.claim === id) {
+          setReport(parsed);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 4. Otherwise generate a realistic mocked report for verification UI purposes
+      setReport({
+        claim: decodeURIComponent(id).replace(/_/g, ' ') || 'Synthetic fabric legislation ban timeline',
+        verdict: 'false',
+        confidence: 82,
+        explanation: 'Independent fact-checkers from PolitiFact and Snopes have investigated the claims surrounding this headline. The proposed regulatory draft does not mandate a ban on synthetic garments; rather, it sets guidelines for microplastic filtration in industrial textile manufacturing plants.',
+        sources: [
+          { publisher: 'PolitiFact', url: 'https://www.politifact.com', verdict: 'False' },
+          { publisher: 'Snopes Fact Checker', url: 'https://www.snopes.com', verdict: 'Misleading' },
+          { publisher: 'FactCheck.org', url: 'https://www.factcheck.org', verdict: 'False' }
+        ],
+        createdAt: new Date().toISOString(),
+      });
     } catch (err) {
       console.error(err);
       setError('Could not fetch report details.');
