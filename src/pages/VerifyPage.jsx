@@ -51,16 +51,17 @@ const VerifyPage = () => {
           throw new Error('Please enter a claim text of at least 10 characters.');
         }
         response = await newsAPI.check(inputText);
+        
       } else if (activeTab === 'url') {
         if (!inputUrl.trim().startsWith('http')) {
           throw new Error('Please enter a valid URL starting with http:// or https://');
         }
-        response = await newsAPI.urlCheck(inputUrl);
+        response = await newsAPI.agentAnalyze(inputText);
       } else if (activeTab === 'analyze') {
         if (inputText.trim().length < 10) {
           throw new Error('Please enter a text block of at least 10 characters.');
         }
-        response = await newsAPI.analyze(inputText);
+    response = await newsAPI.agentAnalyze(inputText);
       }
 
       setResult(response.data.data || response.data);

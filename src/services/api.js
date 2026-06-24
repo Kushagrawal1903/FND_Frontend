@@ -48,6 +48,9 @@ export const newsAPI = {
   check: (claim) => API.post('/api/news/check', { claim }),
   analyze: (claim) => API.post('/api/news/analyze', { claim }),
   urlCheck: (url) => API.post('/api/news/url-check', { url }),
+
+  agentAnalyze: (claim) =>
+    API.post('/api/news/agent-analyze', { claim }),
 };
 
 export const articlesAPI = {
