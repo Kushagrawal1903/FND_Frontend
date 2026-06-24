@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import PerformanceMetrics from '../components/PerformanceMetrics';
 import { articlesAPI, newsAPI } from '../services/api';
 
 const ReportPage = () => {
@@ -9,6 +10,7 @@ const ReportPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState(null);
+  const [performance, setPerformance] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -24,6 +26,12 @@ const ReportPage = () => {
         const dbRes = await newsAPI.getFactCheck(id);
         if (dbRes.data && dbRes.data.data) {
           setReport(dbRes.data.data);
+          // Check for performance in the API response
+          if (dbRes.data.performance) {
+            setPerformance(dbRes.data.performance);
+          } else if (dbRes.data.data.performance) {
+            setPerformance(dbRes.data.data.performance);
+          }
           setLoading(false);
           return;
         }
@@ -61,6 +69,11 @@ const ReportPage = () => {
         const parsed = JSON.parse(recentScan);
         if (parsed._id === id || parsed.claim === id) {
           setReport(parsed);
+          // Load persisted performance data
+          const perfStr = sessionStorage.getItem('recent_scan_performance');
+          if (perfStr) {
+            try { setPerformance(JSON.parse(perfStr)); } catch { /* ignore */ }
+          }
           setLoading(false);
           return;
         }
@@ -304,6 +317,11 @@ const ReportPage = () => {
                     Download PDF Report
                   </button>
                 </div>
+
+                {/* Performance Metrics on sidebar */}
+                {performance && (
+                  <PerformanceMetrics performance={performance} />
+                )}
 
               </div>
 

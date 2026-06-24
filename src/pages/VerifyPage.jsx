@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import PerformanceMetrics from '../components/PerformanceMetrics';
 import { newsAPI, articlesAPI, reportsAPI } from '../services/api';
 
 const VerifyPage = () => {
@@ -11,6 +12,7 @@ const VerifyPage = () => {
   const [inputUrl, setInputUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [performance, setPerformance] = useState(null);
   const [error, setError] = useState('');
 
   // Save Modal States
@@ -42,6 +44,7 @@ const VerifyPage = () => {
     e.preventDefault();
     setError('');
     setResult(null);
+    setPerformance(null);
     setLoading(true);
 
     try {
@@ -65,11 +68,19 @@ const VerifyPage = () => {
 
       const data = response.data.data || response.data;
       setResult(data);
+
+      // Capture performance metrics from the response root
+      const perfData = response.data.performance || data.performance || null;
+      setPerformance(perfData);
       
       // Save verification data to sessionStorage so the Detailed Report page can fetch it
       const verificationData = data.verification || data;
       if (verificationData) {
         sessionStorage.setItem('recent_scan', JSON.stringify(verificationData));
+        // Also persist performance for the report page
+        if (perfData) {
+          sessionStorage.setItem('recent_scan_performance', JSON.stringify(perfData));
+        }
       }
     } catch (err) {
       console.error(err);
@@ -334,7 +345,7 @@ const VerifyPage = () => {
                   {verificationData.sources && verificationData.sources.length > 0 ? (
                     <div className="flex flex-col gap-3">
                       <h3 className="font-label-md text-label-md font-bold text-on-surface">
-                        Referenced Fact-Checks ({verificationData.sources.length})
+                        Referenced Sources & Fact-Checks ({verificationData.sources.length})
                       </h3>
                       
                       <div className="flex flex-col gap-2">
@@ -389,6 +400,11 @@ const VerifyPage = () => {
                       </button>
                     )}
                   </div>
+
+                  {/* Performance Metrics */}
+                  {performance && (
+                    <PerformanceMetrics performance={performance} />
+                  )}
 
                 </div>
               )}
