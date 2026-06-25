@@ -22,14 +22,14 @@ const LoggedOutPage = () => {
           You have been successfully logged out of TruthLens.
         </p>
         <div className="flex flex-col gap-stack-md">
-          <button 
+          <button
             onClick={() => navigate('/login')}
             className="w-full bg-primary text-on-primary font-label-md text-label-md py-3 rounded-lg hover:bg-primary-container transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm">login</span>
             Log Back In
           </button>
-          <button 
+          <button
             onClick={() => navigate('/')}
             className="w-full bg-surface border border-outline-variant text-on-surface font-label-md text-label-md py-3 rounded-lg hover:border-on-surface transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >

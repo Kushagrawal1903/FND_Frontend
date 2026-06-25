@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { articlesAPI, newsAPI } from '../services/api';
+import AgentExecutionPanel from '../components/AgentExecutionPanel';
 
 const ReportPage = () => {
   const { id } = useParams();
@@ -59,8 +60,13 @@ const ReportPage = () => {
       const recentScan = sessionStorage.getItem('recent_scan');
       if (recentScan) {
         const parsed = JSON.parse(recentScan);
-        if (parsed._id === id || parsed.claim === id) {
-          setReport(parsed);
+        const verificationData = parsed.verification || parsed;
+        if (verificationData._id === id || verificationData.claim === id || parsed.articleId === id) {
+          setReport({
+            ...verificationData,
+            analysis: parsed.analysis,
+            agenticAnalysis: parsed.agenticAnalysis,
+          });
           setLoading(false);
           return;
         }
@@ -120,6 +126,12 @@ const ReportPage = () => {
     }
   };
 
+  const getTierBadge = (tier) => {
+    if (tier === 1) return { bg: 'bg-purple-100 text-purple-800 border-purple-200', text: 'Tier 1 · Official' };
+    if (tier === 2) return { bg: 'bg-blue-100 text-blue-800 border-blue-200', text: 'Tier 2 · Media' };
+    return { bg: 'bg-gray-100 text-gray-700 border-gray-200', text: 'Tier 3 · Other' };
+  };
+
   if (loading) {
     return (
       <div className="bg-background min-h-screen flex">
@@ -133,6 +145,7 @@ const ReportPage = () => {
   }
 
   const vStyle = getVerdictStyle(report?.verdict);
+  const agenticData = report?.agenticAnalysis || report || {};
 
   return (
     <div className="bg-background min-h-screen text-on-background font-body-md flex overflow-hidden">
@@ -166,13 +179,23 @@ const ReportPage = () => {
                 
                 {/* Header Card */}
                 <div className="bg-surface border border-outline-variant rounded-xl p-stack-lg shadow-sm flex flex-col gap-4">
-                  <div>
-                    <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block mb-1">
-                      Subject Claim
-                    </span>
-                    <h1 className="font-headline-lg text-headline-lg text-on-surface leading-tight">
-                      "{report.claim}"
-                    </h1>
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <span className="font-label-sm text-xs font-bold text-on-surface-variant uppercase tracking-wide block mb-1">
+                        Original Claim
+                      </span>
+                      <h2 className="font-headline-sm text-base text-on-surface leading-snug font-medium italic">
+                        "{report.originalClaim || report.claim}"
+                      </h2>
+                    </div>
+                    <div>
+                      <span className="font-label-sm text-xs font-bold text-on-surface-variant uppercase tracking-wide block mb-1">
+                        Verified Claim
+                      </span>
+                      <h1 className="font-headline-lg text-headline-lg text-on-surface leading-tight font-bold">
+                        "{report.originalClaim || report.claim}"
+                      </h1>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -207,35 +230,10 @@ const ReportPage = () => {
                   </div>
                 </div>
 
-                {/* Sources Card */}
-                <div className="bg-surface border border-outline-variant rounded-xl p-stack-lg shadow-sm">
-                  <h2 className="font-headline-md text-[20px] font-bold text-on-surface mb-4">
-                    Reference Registry & Sources
-                  </h2>
-                  
-                  <div className="flex flex-col gap-3">
-                    {report.sources?.map((src, index) => (
-                      <div key={index} className="flex justify-between items-center p-4 border border-outline-variant/60 rounded-lg hover:border-on-surface transition-all bg-surface-bright">
-                        <div>
-                          <p className="font-label-md text-label-md font-bold text-on-surface">
-                            {src.publisher}
-                          </p>
-                          <p className="font-label-sm text-[12px] text-on-surface-variant mt-0.5">
-                            Publisher Review Rating: <span className="capitalize font-semibold text-on-surface">{src.verdict}</span>
-                          </p>
-                        </div>
-                        <a 
-                          href={src.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="bg-surface border border-outline-variant hover:border-on-surface hover:text-primary p-2 rounded-lg transition-all flex items-center justify-center"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {/* Redesigned Premium Agentic AI Consensus Findings */}
+                {(report.agenticAnalysis || report.executionReport || (report.timeline && report.timeline.length > 0)) && (
+                  <AgentExecutionPanel agenticData={agenticData} />
+                )}
 
               </div>
 

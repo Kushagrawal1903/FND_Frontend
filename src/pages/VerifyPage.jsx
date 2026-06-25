@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { newsAPI, articlesAPI, reportsAPI } from '../services/api';
+import AgentExecutionPanel from '../components/AgentExecutionPanel';
 
 const VerifyPage = () => {
   const navigate = useNavigate();
@@ -46,30 +47,34 @@ const VerifyPage = () => {
 
     try {
       let response;
+      console.log('[FRONTEND] Analysis request started');
       if (activeTab === 'claim') {
         if (inputText.trim().length < 10) {
           throw new Error('Please enter a claim text of at least 10 characters.');
         }
+        console.log('[FRONTEND] Calling: /api/news/check');
         response = await newsAPI.check(inputText);
       } else if (activeTab === 'url') {
         if (!inputUrl.trim().startsWith('http')) {
           throw new Error('Please enter a valid URL starting with http:// or https://');
         }
+        console.log('[FRONTEND] Calling: /api/news/url-check');
         response = await newsAPI.urlCheck(inputUrl);
       } else if (activeTab === 'analyze') {
         if (inputText.trim().length < 10) {
           throw new Error('Please enter a text block of at least 10 characters.');
         }
+        console.log('[FRONTEND] Calling: /api/v1/news-analysis/analyze');
         response = await newsAPI.analyze(inputText);
       }
 
+      console.log('[FRONTEND] Response received');
       const data = response.data.data || response.data;
       setResult(data);
       
       // Save verification data to sessionStorage so the Detailed Report page can fetch it
-      const verificationData = data.verification || data;
-      if (verificationData) {
-        sessionStorage.setItem('recent_scan', JSON.stringify(verificationData));
+      if (data) {
+        sessionStorage.setItem('recent_scan', JSON.stringify(data));
       }
     } catch (err) {
       console.error(err);
@@ -141,30 +146,26 @@ const VerifyPage = () => {
   const getVerdictStyle = (verdict) => {
     const v = String(verdict).toLowerCase();
     if (v === 'true') {
-      return {
-        bg: 'bg-green-100 text-green-800 border-green-200',
-        dot: 'bg-green-500',
-        text: 'VERIFIED TRUE',
-      };
+      return { bg: 'bg-green-100 text-green-800 border-green-200', dot: 'bg-green-500', text: 'VERIFIED TRUE' };
+    } else if (v === 'likely_true') {
+      return { bg: 'bg-emerald-100 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500', text: 'LIKELY TRUE' };
     } else if (v === 'false') {
-      return {
-        bg: 'bg-red-100 text-red-800 border-red-200',
-        dot: 'bg-red-500',
-        text: 'VERIFIED FALSE',
-      };
+      return { bg: 'bg-red-100 text-red-800 border-red-200', dot: 'bg-red-500', text: 'VERIFIED FALSE' };
+    } else if (v === 'likely_false') {
+      return { bg: 'bg-orange-100 text-orange-800 border-orange-200', dot: 'bg-orange-500', text: 'LIKELY FALSE' };
     } else if (v === 'mixture') {
-      return {
-        bg: 'bg-amber-100 text-amber-800 border-amber-200',
-        dot: 'bg-amber-500',
-        text: 'MIXED / MISLEADING',
-      };
+      return { bg: 'bg-amber-100 text-amber-800 border-amber-200', dot: 'bg-amber-500', text: 'MIXED / MISLEADING' };
+    } else if (v === 'insufficient_evidence') {
+      return { bg: 'bg-slate-100 text-slate-800 border-slate-200', dot: 'bg-slate-500', text: 'INSUFFICIENT EVIDENCE' };
     } else {
-      return {
-        bg: 'bg-gray-100 text-gray-800 border-gray-200',
-        dot: 'bg-gray-500',
-        text: 'UNVERIFIED',
-      };
+      return { bg: 'bg-gray-100 text-gray-800 border-gray-200', dot: 'bg-gray-500', text: 'UNVERIFIED' };
     }
+  };
+
+  const getTierBadge = (tier) => {
+    if (tier === 1) return { bg: 'bg-purple-100 text-purple-800 border-purple-200', text: 'Tier 1 · Official' };
+    if (tier === 2) return { bg: 'bg-blue-100 text-blue-800 border-blue-200', text: 'Tier 2 · Media' };
+    return { bg: 'bg-gray-100 text-gray-700 border-gray-200', text: 'Tier 3 · Other' };
   };
 
   // Extract variables for verification record display
@@ -280,94 +281,110 @@ const VerifyPage = () => {
               {verificationData && (
                 <div className="bg-surface border border-outline-variant rounded-xl p-stack-lg shadow-sm flex flex-col gap-6">
                   
-                  {/* Verdict Header */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-outline-variant">
-                    <div>
-                      <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide block mb-1">
-                        Verified Claim
-                      </span>
-                      <h2 className="font-headline-md text-headline-md text-on-surface leading-snug">
-                        "{verificationData.claim}"
-                      </h2>
-                    </div>
+                  {result.agenticAnalysis ? (
+                    <AgentExecutionPanel agenticData={result.agenticAnalysis} />
+                  ) : (
+                    <>
+                      {/* Verdict Header */}
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-outline-variant">
+                        <div className="flex flex-col gap-3">
+                          <div>
+                            <span className="font-label-sm text-xs font-bold text-on-surface-variant uppercase tracking-wide block mb-1">
+                              Original Claim
+                            </span>
+                            <h2 className="font-headline-sm text-base text-on-surface leading-snug font-medium italic">
+                              "{result?.originalClaim || verificationData.claim || inputText}"
+                            </h2>
+                          </div>
+                          <div>
+                            <span className="font-label-sm text-xs font-bold text-on-surface-variant uppercase tracking-wide block mb-1">
+                              Verified Claim
+                            </span>
+                            <h2 className="font-headline-md text-lg text-on-surface leading-snug font-bold">
+                              "{result?.originalClaim || verificationData.claim || inputText}"
+                            </h2>
+                          </div>
+                        </div>
 
-                    <div className="flex flex-col items-end shrink-0">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-bold ${getVerdictStyle(verificationData.verdict).bg}`}>
-                        <span className={`w-2 h-2 rounded-full ${getVerdictStyle(verificationData.verdict).dot}`}></span>
-                        {getVerdictStyle(verificationData.verdict).text}
-                      </span>
-                      <span className="font-label-sm text-label-sm text-on-surface-variant mt-1.5">
-                        Confidence: <strong className="text-on-surface">{verificationData.confidence}%</strong>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Verdict explanation */}
-                  <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant/50">
-                    <h3 className="font-label-md text-label-md font-bold text-on-surface mb-1.5 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">info</span>
-                      System Explanation
-                    </h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                      {verificationData.explanation}
-                    </p>
-                  </div>
-
-                  {/* Keywords (Deep Analysis specific) */}
-                  {result.analysis && (
-                    <div className="flex flex-col gap-2">
-                      <h3 className="font-label-md text-label-md font-bold text-on-surface">Extracted Keywords & Stats</h3>
-                      <div className="flex flex-wrap gap-2 items-center">
-                        {result.analysis.keywords?.map((word, idx) => (
-                          <span key={idx} className="bg-secondary-container text-on-secondary-container rounded-sm px-2 py-0.5 text-xs font-semibold uppercase">
-                            {word}
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-bold ${getVerdictStyle(verificationData.verdict).bg}`}>
+                            <span className={`w-2 h-2 rounded-full ${getVerdictStyle(verificationData.verdict).dot}`}></span>
+                            {getVerdictStyle(verificationData.verdict).text}
                           </span>
-                        ))}
-                        <span className="text-on-surface-variant font-label-sm text-label-sm ml-2">
-                          Total Word Count: {result.analysis.wordCount}
-                        </span>
+                          <span className="font-label-sm text-label-sm text-on-surface-variant mt-1.5">
+                            Confidence: <strong className="text-on-surface">{verificationData.confidence}%</strong>
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Sources List */}
-                  {verificationData.sources && verificationData.sources.length > 0 ? (
-                    <div className="flex flex-col gap-3">
-                      <h3 className="font-label-md text-label-md font-bold text-on-surface">
-                        Referenced Fact-Checks ({verificationData.sources.length})
-                      </h3>
-                      
-                      <div className="flex flex-col gap-2">
-                        {verificationData.sources.map((source, index) => (
-                          <div 
-                            key={index} 
-                            className="flex justify-between items-center p-3 border border-outline-variant/60 rounded-lg hover:border-on-surface transition-all bg-surface-bright"
-                          >
-                            <div>
-                              <p className="font-label-md text-label-md font-bold text-on-surface">
-                                {source.publisher}
-                              </p>
-                              <a 
-                                href={source.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="font-label-sm text-[12px] text-primary hover:underline flex items-center gap-1 mt-0.5"
-                              >
-                                View Source <span className="material-symbols-outlined text-[12px]">open_in_new</span>
-                              </a>
-                            </div>
+                      {/* Verdict explanation */}
+                      <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant/50">
+                        <h3 className="font-label-md text-label-md font-bold text-on-surface mb-1.5 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[18px]">info</span>
+                          System Explanation
+                        </h3>
+                        <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                          {verificationData.explanation}
+                        </p>
+                      </div>
 
-                            <span className="font-label-sm text-label-sm text-on-surface-variant italic">
-                              Verdict: <strong className="text-on-surface capitalize">{source.verdict}</strong>
+                      {/* Keywords (Deep Analysis specific) */}
+                      {result.analysis && (
+                        <div className="flex flex-col gap-2">
+                          <h3 className="font-label-md text-label-md font-bold text-on-surface">Extracted Keywords & Stats</h3>
+                          <div className="flex flex-wrap gap-2 items-center">
+                            {result.analysis.keywords?.map((word, idx) => (
+                              <span key={idx} className="bg-secondary-container text-on-secondary-container rounded-sm px-2 py-0.5 text-xs font-semibold uppercase">
+                                {word}
+                              </span>
+                            ))}
+                            <span className="text-on-surface-variant font-label-sm text-label-sm ml-2">
+                              Total Word Count: {result.analysis.wordCount}
                             </span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="font-body-md text-body-md text-on-surface-variant italic">
-                      No Google Fact-Check tools matched this claim query. Verdict is simulated credibility.
-                    </p>
+                        </div>
+                      )}
+
+                      {/* Sources List (existing fact-check sources) */}
+                      {verificationData.sources && verificationData.sources.length > 0 ? (
+                        <div className="flex flex-col gap-3">
+                          <h3 className="font-label-md text-label-md font-bold text-on-surface">
+                            Referenced Fact-Checks ({verificationData.sources.length})
+                          </h3>
+                          
+                          <div className="flex flex-col gap-2">
+                            {verificationData.sources.map((source, index) => (
+                              <div 
+                                key={index} 
+                                className="flex justify-between items-center p-3 border border-outline-variant/60 rounded-lg hover:border-on-surface transition-all bg-surface-bright"
+                              >
+                                <div>
+                                  <p className="font-label-md text-label-md font-bold text-on-surface">
+                                    {source.publisher}
+                                  </p>
+                                  <a 
+                                    href={source.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="font-label-sm text-[12px] text-primary hover:underline flex items-center gap-1 mt-0.5"
+                                  >
+                                    View Source <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                                  </a>
+                                </div>
+
+                                <span className="font-label-sm text-label-sm text-on-surface-variant italic">
+                                  Verdict: <strong className="text-on-surface capitalize">{source.verdict}</strong>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="font-body-md text-body-md text-on-surface-variant italic">
+                          No Google Fact-Check tools matched this claim query. This is treated as neutral — not negative evidence.
+                        </p>
+                      )}
+                    </>
                   )}
 
                   {/* Action Buttons */}
