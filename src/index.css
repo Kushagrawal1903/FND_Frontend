@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-on-surface: #151c25;
+  --color-inverse-surface: #2a313b;
+  --color-on-surface-variant: #434655;
+  --color-tertiary-fixed: #6bff8f;
+  --color-error: #ba1a1a;
+  --color-on-secondary: #ffffff;
+  --color-on-primary-container: #eeefff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-bright: #f8f9ff;
+  --color-on-error-container: #93000a;
+  --color-background: #FAFAFA;
+  --color-secondary-container: #dce2f3;
+  --color-on-tertiary-container: #c1ffc5;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-secondary-fixed-dim: #c0c7d6;
+  --color-inverse-on-surface: #eaf1fe;
+  --color-secondary: #585f6c;
+  --color-surface-tint: #0053db;
+  --color-secondary-fixed: #dce2f3;
+  --color-primary-fixed-dim: #b4c5ff;
+  --color-on-secondary-container: #5e6572;
+  --color-tertiary: #006229;
+  --color-surface-container-highest: #dce3f0;
+  --color-on-tertiary-fixed: #002109;
+  --color-surface-container-high: #e2e8f5;
+  --color-on-background: #151c25;
+  --color-surface: #FFFFFF;
+  --color-surface-container: #e7eefb;
+  --color-on-primary-fixed-variant: #003ea8;
+  --color-tertiary-fixed-dim: #4ae176;
+  --color-surface-dim: #d4dae7;
+  --color-on-secondary-fixed: #151c27;
+  --color-on-secondary-fixed-variant: #404754;
+  --color-outline-variant: #E5E7EB;
+  --color-tertiary-container: #007e37;
+  --color-primary: #2563EB;
+  --color-outline: #737686;
+  --color-primary-container: #2563eb;
+  --color-on-primary: #ffffff;
+  --color-on-tertiary: #ffffff;
+  --color-surface-container-low: #eef4ff;
+  --color-primary-fixed: #dbe1ff;
+  --color-on-tertiary-fixed-variant: #005321;
+  --color-on-primary-fixed: #00174b;
+  --color-inverse-primary: #b4c5ff;
+  --color-surface-variant: #dce3f0;
+
+  --border-radius-default: 0.125rem;
+  --border-radius-lg: 0.25rem;
+  --border-radius-xl: 0.5rem;
+  --border-radius-full: 0.75rem;
+
+  --spacing-margin-desktop: 40px;
+  --spacing-stack-sm: 8px;
+  --spacing-stack-lg: 24px;
+  --spacing-gutter: 24px;
+  --spacing-stack-md: 16px;
+  --spacing-base: 8px;
+  --spacing-stack-xs: 4px;
+  --spacing-margin-mobile: 16px;
+  --spacing-container-max: 1280px;
+  --spacing-stack-xl: 48px;
+
+  --font-family-label-sm: "Geist", sans-serif;
+  --font-family-headline-lg-mobile: "Geist", sans-serif;
+  --font-family-display-lg: "Geist", sans-serif;
+  --font-family-body-md: "Inter", sans-serif;
+  --font-family-label-md: "Geist", sans-serif;
+  --font-family-headline-md: "Geist", sans-serif;
+  --font-family-headline-lg: "Geist", sans-serif;
+  --font-family-body-lg: "Inter", sans-serif;
+}
+
+/* Material symbols */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom Input Focus Ring - matching guidance */
+.input-focus-ring:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+/* Fonts and body overrides */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #FAFAFA;
+  color: #151c25;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Geist', sans-serif;
+}
