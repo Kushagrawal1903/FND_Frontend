@@ -1,77 +1,90 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-/**
- * Pipeline step definitions with icons, labels, and color themes.
- * Order matches the verification pipeline execution sequence.
- */
-const STEPS = [
-  { key: 'factCheckMs',  label: 'Fact Check',         icon: 'fact_check',    color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
-  { key: 'newsSearchMs', label: 'News Search',        icon: 'newspaper',     color: '#7C3AED', bg: 'rgba(124,58,237,0.08)' },
-  { key: 'webSearchMs',  label: 'Web Search',         icon: 'travel_explore',color: '#0891B2', bg: 'rgba(8,145,178,0.08)' },
-  { key: 'credibilityMs',label: 'Source Credibility',  icon: 'verified_user', color: '#059669', bg: 'rgba(5,150,105,0.08)' },
-  { key: 'llmAnalysisMs',label: 'LLM Analysis',       icon: 'psychology',    color: '#D97706', bg: 'rgba(217,119,6,0.08)' },
+const LEGACY_STEPS = [
+  { key: 'factCheckMs', label: 'Fact Check', icon: 'fact_check', color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
+  { key: 'newsSearchMs', label: 'News Search', icon: 'newspaper', color: '#7C3AED', bg: 'rgba(124,58,237,0.08)' },
+  { key: 'webSearchMs', label: 'Web Search', icon: 'travel_explore', color: '#0891B2', bg: 'rgba(8,145,178,0.08)' },
+  { key: 'credibilityMs', label: 'Source Credibility', icon: 'verified_user', color: '#059669', bg: 'rgba(5,150,105,0.08)' },
+  { key: 'llmAnalysisMs', label: 'LLM Analysis', icon: 'psychology', color: '#D97706', bg: 'rgba(217,119,6,0.08)' },
 ];
 
-/**
- * Formats a millisecond value into a readable duration string.
- * - < 1000ms → "123.45 ms"
- * - ≥ 1000ms → "1.23 s"
- */
 const formatDuration = (ms) => {
-  if (ms === 0 || ms == null) return '—';
-  if (ms < 1000) return `${Number(ms).toFixed(2)} ms`;
-  return `${(ms / 1000).toFixed(2)} s`;
+  const value = Number(ms);
+  if (!Number.isFinite(value) || value <= 0) return 'Not Available';
+  if (value < 1000) return `${value.toFixed(2)} ms`;
+  return `${(value / 1000).toFixed(2)} s`;
 };
 
-/**
- * PerformanceMetrics
- *
- * Renders a premium, animated card showing the timing breakdown
- * of each verification pipeline step with proportional bars.
- *
- * @param {{ performance: import('../../../Backend/FND_Backend/src/agents/AgentTypes').VerificationPerformance }} props
- */
+const toEntries = (value) => Object.entries(value || {})
+  .filter(([, duration]) => Number(duration) > 0)
+  .sort((a, b) => Number(b[1]) - Number(a[1]));
+
+const TimingRows = ({ title, entries, icon }) => {
+  if (!entries.length) return null;
+
+  const max = Math.max(...entries.map(([, duration]) => Number(duration)), 1);
+
+  return (
+    <details className="rounded-lg border border-outline-variant/60 bg-surface-bright" open>
+      <summary className="cursor-pointer px-4 py-3 font-semibold text-sm text-on-surface flex items-center gap-2">
+        <span className="material-symbols-outlined text-primary text-[17px]">{icon}</span>
+        {title}
+      </summary>
+      <div className="px-4 pb-4 flex flex-col gap-3">
+        {entries.map(([name, duration]) => {
+          const pct = Math.max((Number(duration) / max) * 100, 3);
+          return (
+            <div key={name} className="flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-3 text-[12px]">
+                <span className="font-semibold text-on-surface capitalize">{name.replace(/([A-Z])/g, ' $1')}</span>
+                <span className="text-on-surface-variant tabular-nums">{formatDuration(duration)}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-outline-variant/40 overflow-hidden">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+};
+
 const PerformanceMetrics = ({ performance }) => {
   const [animateIn, setAnimateIn] = useState(false);
 
   useEffect(() => {
-    // Trigger the bar width animation after mount
     const raf = requestAnimationFrame(() => setAnimateIn(true));
     return () => cancelAnimationFrame(raf);
   }, [performance]);
 
   if (!performance) return null;
 
-  const totalMs = performance.totalMs || 0;
-
-  // Compute the max step value (excluding totalMs) for bar scaling
-  const stepValues = STEPS.map((s) => performance[s.key] || 0);
-  const maxStep = Math.max(...stepValues, 1); // prevent division by zero
-
-  // Count how many steps were actually executed (value > 0)
-  const activeSteps = stepValues.filter((v) => v > 0).length;
+  const totalMs = Number(performance.totalMs || 0);
+  const stepValues = LEGACY_STEPS.map((step) => Number(performance[step.key] || 0));
+  const maxStep = Math.max(...stepValues, 1);
+  const activeSteps = stepValues.filter((value) => value > 0).length;
+  const agentEntries = toEntries(performance.agents);
+  const toolEntries = toEntries(performance.tools);
 
   return (
     <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-
-      {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+      <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-primary text-[18px]">speed</span>
           </div>
           <div>
             <h3 className="font-label-md text-label-md font-bold text-on-surface leading-none">
-              Pipeline Performance
+              Workflow Timing
             </h3>
             <span className="font-label-sm text-[11px] text-on-surface-variant">
-              {activeSteps} of {STEPS.length} steps executed
+              {activeSteps} legacy steps, {agentEntries.length} agents, {toolEntries.length} tools
             </span>
           </div>
         </div>
 
-        {/* Total duration badge */}
-        <div className="flex items-center gap-1.5 bg-surface-container-low border border-outline-variant/60 rounded-full px-3 py-1">
+        <div className="flex items-center gap-1.5 bg-surface-container-low border border-outline-variant/60 rounded-full px-3 py-1 self-start sm:self-auto">
           <span className="material-symbols-outlined text-[14px] text-on-surface-variant">timer</span>
           <span className="font-label-sm text-[12px] font-bold text-on-surface tabular-nums">
             {formatDuration(totalMs)}
@@ -80,19 +93,16 @@ const PerformanceMetrics = ({ performance }) => {
         </div>
       </div>
 
-      {/* Divider */}
       <div className="h-px bg-outline-variant/60 mx-5" />
 
-      {/* Steps list */}
       <div className="px-5 py-4 flex flex-col gap-3">
-        {STEPS.map((step) => {
-          const value = performance[step.key] || 0;
+        {LEGACY_STEPS.map((step) => {
+          const value = Number(performance[step.key] || 0);
           const pct = maxStep > 0 ? (value / maxStep) * 100 : 0;
           const isActive = value > 0;
 
           return (
             <div key={step.key} className="flex items-center gap-3 group">
-              {/* Icon */}
               <div
                 className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300"
                 style={{
@@ -108,7 +118,6 @@ const PerformanceMetrics = ({ performance }) => {
                 </span>
               </div>
 
-              {/* Label + bar */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <span
@@ -125,7 +134,6 @@ const PerformanceMetrics = ({ performance }) => {
                   </span>
                 </div>
 
-                {/* Progress bar track */}
                 <div className="h-1.5 bg-outline-variant/30 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700 ease-out"
@@ -140,29 +148,16 @@ const PerformanceMetrics = ({ performance }) => {
             </div>
           );
         })}
+
+        <TimingRows title="Every Agent Time" entries={agentEntries} icon="account_tree" />
+        <TimingRows title="Every Tool Time" entries={toolEntries} icon="construction" />
       </div>
 
-      {/* Footer summary */}
-      <div className="px-5 py-3 bg-surface-container-low border-t border-outline-variant/40 flex items-center justify-between">
+      <div className="px-5 py-3 bg-surface-container-low border-t border-outline-variant/40 flex items-center justify-between gap-3">
         <span className="font-label-sm text-[11px] text-on-surface-variant flex items-center gap-1">
           <span className="material-symbols-outlined text-[13px]">info</span>
-          Measured via high-resolution timers (process.hrtime)
+          Timings are reported by the backend in milliseconds.
         </span>
-        <div className="flex items-center gap-2">
-          {STEPS.map((step) => {
-            const isActive = (performance[step.key] || 0) > 0;
-            return (
-              <div
-                key={step.key}
-                className="w-2 h-2 rounded-full transition-all duration-500"
-                style={{
-                  backgroundColor: isActive ? step.color : 'var(--color-outline-variant)',
-                }}
-                title={`${step.label}: ${formatDuration(performance[step.key])}`}
-              />
-            );
-          })}
-        </div>
       </div>
     </div>
   );

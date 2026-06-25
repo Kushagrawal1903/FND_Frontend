@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { adminAPI } from '../services/api';
@@ -15,10 +15,6 @@ const AdminPage = () => {
   const [users, setUsers] = useState([]);
   const [activeSubTab, setActiveSubTab] = useState('reports'); // 'reports' | 'users'
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -44,6 +40,13 @@ const AdminPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      fetchAdminData();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   const handleUpdateReportStatus = async (id, status) => {
     try {

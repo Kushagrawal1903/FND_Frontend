@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { articlesAPI } from '../services/api';
@@ -16,10 +16,6 @@ const SavedArticlesPage = () => {
   const [editSuccess, setEditSuccess] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
 
-  useEffect(() => {
-    fetchArticles();
-  }, []);
-
   const fetchArticles = async () => {
     setLoading(true);
     setError('');
@@ -35,6 +31,13 @@ const SavedArticlesPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      fetchArticles();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to remove this bookmark?')) return;
